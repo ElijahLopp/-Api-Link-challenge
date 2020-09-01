@@ -1,0 +1,5 @@
+# Environment variables
+.env
+
+# Error yarn
+yarn-error.log
