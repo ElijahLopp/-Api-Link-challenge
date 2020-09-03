@@ -6,11 +6,31 @@ const libPipedrive = require("../pipedrive/PipedriveServices");
 import objectToXml from "../util/objectToXml";
 import createNewProduct from "../services/createNewProduct";
 
+//import of environment variables
 require("dotenv/config");
 
 const app = express();
 
-app.get("/pipedrive", async (req, res) => {
+//vailidation middleware, just post
+function validateMethod(request, response, next) {
+  const { method } = request;
+
+  if (method.toUpperCase() != "POST") {
+    return response
+      .status(400)
+      .json({ error: "This route only accepts post method" });
+  }
+
+  next();
+}
+
+app.use("/pipedriveToBling", validateMethod);
+
+//Route to create a new product inside the bling and add the same ones inside the mongodb
+app.post("/pipedriveToBling", async (req, res) => {
+  //Data values
+  var dataValues = [];
+
   //TOKEN OF BLING
   const apiKeyBling = `${process.env.TOKEN_BLING}`;
 
@@ -30,6 +50,9 @@ app.get("/pipedrive", async (req, res) => {
     newValue["date"] = obj.add_time;
     newValue["value"] = obj.value;
 
+    //Adding new values ​​on date
+    dataValues.push(newValue);
+
     //This variable will store the string that will represent the XML file
     const xmlString = objectToXml(newValue);
 
@@ -43,6 +66,7 @@ app.get("/pipedrive", async (req, res) => {
     //Values ​​being included in mongodb
     const newValueCollection = new opportunityModel(newValue);
 
+    //Saving the information added to mongodb
     try {
       newValueCollection.save();
       console.log(`This value was successfully added: ${newValueCollection}`);
@@ -51,14 +75,18 @@ app.get("/pipedrive", async (req, res) => {
     }
   });
 
-  res.status(201).json({ messege: "created" });
+  //returning as created if everything goes as expected
+  res.status(201).json({ status: "Success", data: dataValues });
 });
 
-app.get("/opportunitys", async (req, res) => {
+//Route to get information inside mongodb
+app.get("/collectionsValues", async (req, res) => {
+  //Fetching collection information within mongodb
   const opportunity = await opportunityModel.find({});
 
+  // Returns the mongo information if everything goes as expected
   try {
-    res.status(200).json(opportunity);
+    res.status(200).json({ status: "Success", data: opportunity });
   } catch (err) {
     res.status(500).json({ error: err });
   }

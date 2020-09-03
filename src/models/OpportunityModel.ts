@@ -1,5 +1,7 @@
+//Import of node modules
 const mongoosee = require("mongoose");
 
+//Build schemas
 const OpportunitySchema = new mongoosee.Schema({
   opportunity: {
     type: String,
